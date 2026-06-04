@@ -17,6 +17,8 @@ interface TopAppBarProps {
   systemHealth: { status: string; has_api_key: boolean } | null;
   isDarkMode: boolean;
   setIsDarkMode: (mode: boolean) => void;
+  demoMode: boolean;
+  onExitDemo: () => void;
 }
 
 export default function TopAppBar({
@@ -26,12 +28,14 @@ export default function TopAppBar({
   setActiveTab,
   systemHealth,
   isDarkMode,
-  setIsDarkMode
+  setIsDarkMode,
+  demoMode,
+  onExitDemo
 }: TopAppBarProps) {
   const [profileOpen, setProfileOpen] = useState(false);
 
   return (
-    <header className="h-16 w-full sticky top-0 z-40 bg-white/45 dark:bg-[#07090e]/35 backdrop-blur-md border-b border-white/25 dark:border-zinc-800/35 flex items-center justify-between px-6 transition-all duration-300">
+    <header className="h-16 w-full sticky top-0 z-40 bg-white/35 dark:bg-[#07090e]/25 backdrop-blur-[9px] border-b border-white/20 dark:border-zinc-800/25 flex items-center justify-between px-6 transition-all duration-300">
       {/* Search component with auto matching */}
       <div className="flex items-center gap-4 flex-1 max-w-xl">
         <div className="relative w-full">
@@ -52,6 +56,12 @@ export default function TopAppBar({
             </button>
           )}
         </div>
+
+        {demoMode && (
+          <span className="hidden md:inline-flex items-center gap-1.5 px-3 py-1 bg-amber-500/10 border border-amber-500/30 text-amber-500 text-[10px] font-mono rounded-full font-bold uppercase tracking-wider animate-pulse">
+            Demo Mode Active
+          </span>
+        )}
       </div>
 
       {/* Auxiliary links and user states */}
@@ -144,16 +154,20 @@ export default function TopAppBar({
                   <button
                     onClick={async () => {
                       setProfileOpen(false);
-                      try {
-                        await signOut(auth);
-                      } catch (err) {
-                        console.error("Sign out process failed:", err);
+                      if (demoMode) {
+                        onExitDemo();
+                      } else {
+                        try {
+                          await signOut(auth);
+                        } catch (err) {
+                          console.error("Sign out process failed:", err);
+                        }
                       }
                     }}
-                    className="w-full text-left px-2.5 py-1.5 text-xs text-red-650 dark:text-red-400 hover:bg-red-50/50 dark:hover:bg-red-950/20 rounded-lg flex items-center gap-1.5 transition-colors"
+                    className="w-full text-left px-2.5 py-1.5 text-xs text-red-600 dark:text-red-400 hover:bg-red-50/50 dark:hover:bg-red-950/20 rounded-lg flex items-center gap-1.5 transition-colors"
                   >
                     <LogOut className="w-3.5 h-3.5" />
-                    <span>Disconnect Workstation</span>
+                    <span>{demoMode ? "Exit Demo State" : "Disconnect Workstation"}</span>
                   </button>
                 </div>
               </div>

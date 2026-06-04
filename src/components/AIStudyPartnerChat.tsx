@@ -34,6 +34,18 @@ export default function AIStudyPartnerChat({ currentTab, systemHealth }: AIStudy
     }
   }, [chatMessages, isOpen]);
 
+  // Escape key handler (roadmap 4.4)
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setIsOpen(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen]);
+
   const handleSendMessage = async (textToSend?: string) => {
     const prompt = textToSend || userInput;
     if (!prompt.trim() || isLoading) return;
@@ -110,39 +122,52 @@ export default function AIStudyPartnerChat({ currentTab, systemHealth }: AIStudy
 
   return (
     <>
-      {/* 1. Floating Sparkle toggle button */}
+      {/* 1. Floating Sparkle toggle button with screen reader labels (PR 4.2) */}
       <button
+        type="button"
+        id="ai-study-partner-toggle"
         onClick={() => setIsOpen(!isOpen)}
+        aria-label="Open AI Scholar Study Partner"
+        aria-expanded={isOpen}
         className="fixed bottom-6 right-6 z-50 p-4 bg-black dark:bg-white text-white dark:text-black rounded-full shadow-lg hover:shadow-xl active:scale-95 transition-all outline-none flex items-center justify-center gap-2 font-semibold"
       >
         <Sparkles className="w-5 h-5 animate-pulse text-amber-400 dark:text-amber-600" />
         <span className="font-sans text-xs">AI Study Partner</span>
       </button>
 
-      {/* 2. Interactive Sliding Drawer Window */}
+      {/* 2. Interactive Sliding Drawer Window formatted as highly visible semantic dialog (PR 4.3) */}
       {isOpen && (
-        <div className="fixed bottom-24 right-6 z-50 w-full max-w-sm h-[520px] glass-panel rounded-2xl shadow-2xl flex flex-col justify-between overflow-hidden animate-fade-in text-left border border-white/25 dark:border-zinc-805">
+        <div 
+          role="dialog" 
+          aria-modal="true" 
+          aria-labelledby="ai-chat-header-title"
+          className="fixed bottom-24 right-6 z-50 w-full max-w-sm h-[520px] glass-panel rounded-2xl shadow-2xl flex flex-col justify-between overflow-hidden animate-fade-in text-left border border-white/25 dark:border-zinc-805"
+        >
           
           {/* Header */}
           <div className="p-4 bg-white/45 dark:bg-zinc-950/30 border-b border-white/20 dark:border-zinc-800/40 flex items-center justify-between backdrop-blur-sm">
             <div className="flex items-center gap-2">
               <BrainCircuit className="w-4.5 h-4.5 text-indigo-600 dark:text-sky-400 animate-pulse" />
               <div>
-                <h3 className="font-sans font-bold text-xs text-slate-900 dark:text-white leading-tight">Gemini Scholar Partner</h3>
+                <h3 id="ai-chat-header-title" className="font-sans font-bold text-xs text-slate-900 dark:text-white leading-tight">Gemini Scholar Partner</h3>
                 <span className="text-[10px] font-mono text-slate-500 dark:text-zinc-400 uppercase tracking-widest leading-none">Live AI Education Model</span>
               </div>
             </div>
             
             <div className="flex items-center gap-1">
               <button 
+                type="button"
                 onClick={handleResetChat} 
-                title="Clear logs" 
+                title="Clear conversational state logs" 
+                aria-label="Clear chat history log"
                 className="p-1.5 hover:bg-white/40 dark:hover:bg-zinc-800/40 rounded-xl text-zinc-500 hover:text-indigo-600"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
               </button>
               <button 
+                type="button"
                 onClick={() => setIsOpen(false)} 
+                aria-label="Close AI partner dialog feed"
                 className="p-1.5 hover:bg-white/40 dark:hover:bg-zinc-800/40 rounded-xl text-zinc-500 hover:text-red-500"
               >
                 <X className="w-3.5 h-3.5" />
@@ -185,6 +210,7 @@ export default function AIStudyPartnerChat({ currentTab, systemHealth }: AIStudy
               <span className="text-[9px] font-mono text-slate-500 dark:text-zinc-400 uppercase tracking-widest pl-1 leading-none">Preset Queries</span>
               {presets.map((q, idx) => (
                 <button
+                  type="button"
                   key={idx}
                   onClick={() => handleQuickQuestion(q)}
                   className="w-full text-left font-sans text-[11px] bg-white/45 dark:bg-zinc-900/40 hover:bg-white/60 dark:hover:bg-zinc-850/40 border border-white/20 dark:border-zinc-800 p-1.5 rounded-xl transition-all text-slate-800 dark:text-zinc-300 truncate font-medium"
@@ -195,11 +221,13 @@ export default function AIStudyPartnerChat({ currentTab, systemHealth }: AIStudy
             </div>
           )}
 
-          {/* Input submission box */}
+          {/* Input submission box (PR 4.5) */}
           <div className="p-3 border-t border-white/15 dark:border-zinc-800 bg-white/45 dark:bg-zinc-900/40 backdrop-blur-sm">
             <div className="flex gap-2">
+              <label htmlFor="ai-chatbot-text-input" className="sr-only">Ask Scholar anything</label>
               <input
                 type="text"
+                id="ai-chatbot-text-input"
                 placeholder="Ask Scholar anything... (markdown supported)"
                 value={userInput}
                 onChange={(e) => setUserInput(e.target.value)}
@@ -207,7 +235,9 @@ export default function AIStudyPartnerChat({ currentTab, systemHealth }: AIStudy
                 className="w-full glass-input rounded-xl px-3 py-1.5 font-sans text-xs text-slate-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none"
               />
               <button
+                type="button"
                 disabled={!userInput.trim() || isLoading}
+                aria-label="Send query to AI tutor"
                 onClick={() => handleSendMessage()}
                 className="p-2.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:opacity-95 text-white dark:text-black rounded-xl disabled:opacity-40 transition-all flex items-center justify-center shadow-md shadow-indigo-600/10"
               >

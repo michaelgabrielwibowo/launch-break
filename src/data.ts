@@ -113,10 +113,10 @@ export const INITIAL_TOPICS: TopicTrack[] = [
       { id: "t1_ct5", title: "Gradient Descent Optimization Loops", completed: false }
     ],
     resources: [
-      INITIAL_RESOURCE_POOL[0],
-      INITIAL_RESOURCE_POOL[1],
-      INITIAL_RESOURCE_POOL[2],
-      INITIAL_RESOURCE_POOL[7]
+      INITIAL_RESOURCE_POOL[0]!,
+      INITIAL_RESOURCE_POOL[1]!,
+      INITIAL_RESOURCE_POOL[2]!,
+      INITIAL_RESOURCE_POOL[7]!
     ]
   },
   {
@@ -134,8 +134,8 @@ export const INITIAL_TOPICS: TopicTrack[] = [
       { id: "t2_ct4", title: "Custom Decorator Functions & Metaclasses", completed: false }
     ],
     resources: [
-      INITIAL_RESOURCE_POOL[4],
-      INITIAL_RESOURCE_POOL[3]
+      INITIAL_RESOURCE_POOL[4]!,
+      INITIAL_RESOURCE_POOL[3]!
     ]
   },
   {
@@ -153,7 +153,7 @@ export const INITIAL_TOPICS: TopicTrack[] = [
       { id: "t3_ct4", title: "Bellman's Principle & Dynamic Network Routing", completed: false }
     ],
     resources: [
-      INITIAL_RESOURCE_POOL[5]
+      INITIAL_RESOURCE_POOL[5]!
     ]
   }
 ];

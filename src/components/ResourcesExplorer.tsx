@@ -83,6 +83,18 @@ export default function ResourcesExplorer({
     return true;
   });
 
+  // Escape closes document drawer (PR 4.4)
+  useEffect(() => {
+    if (!selectedPaper) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        handleCloseReader();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedPaper]);
+
   // Toggle bookmark / saved state
   const handleToggleBookmark = (id: string, e: React.MouseEvent) => {
     e.stopPropagation(); // Avoid triggering card click
@@ -277,22 +289,26 @@ export default function ResourcesExplorer({
             Tutorials / Videos
           </button>
         </div>
-      </div>
-
-      {/* Grid displays */}
+      </div>      {/* Grid displays */}
       {filteredList.length === 0 ? (
         <div className="p-12 text-center bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded">
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">
-            No matching resources found. Try altering active search strings!
+          <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-4 font-sans">
+            No resources match your search. Clear the search or try a broader topic.
           </p>
+          <button
+            type="button"
+            onClick={() => onSearchChange("")}
+            className="px-4 py-2 bg-indigo-650 hover:bg-indigo-500 text-white font-sans text-xs font-semibold rounded-lg transition-all"
+          >
+            Clear Search
+          </button>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {filteredList.map((res) => (
-            <div
+            <article
               key={res.id}
-              onClick={() => handleOpenReader(res)}
-              className="bg-white dark:bg-zinc-900 border border-[#eceef0] dark:border-zinc-800 rounded-lg p-5 hover:shadow-md hover:border-zinc-400 dark:hover:border-zinc-700 transition-all cursor-pointer relative flex flex-col justify-between"
+              className="bg-white dark:bg-zinc-900 border border-[#eceef0] dark:border-zinc-800 rounded-lg p-5 hover:shadow-md hover:border-zinc-400 dark:hover:border-zinc-700 transition-all relative flex flex-col justify-between text-left"
             >
               <div>
                 <div className="flex items-center justify-between mb-3">
@@ -300,10 +316,12 @@ export default function ResourcesExplorer({
                     {res.type}
                   </span>
                   
-                  {/* Bookmark Toggle Icon */}
+                  {/* Bookmark Toggle Icon (PR 4.1) */}
                   <button
+                    type="button"
+                    aria-label={res.isSaved ? "Remove saved resource benchmark" : "Save resource benchmark"}
                     onClick={(e) => handleToggleBookmark(res.id, e)}
-                    className="p-1 rounded text-zinc-400 hover:text-amber-500 dark:hover:text-amber-400 active:scale-90 transition-all"
+                    className="p-1 rounded text-zinc-400 hover:text-amber-500 dark:hover:text-amber-400 active:scale-90 transition-all cursor-pointer z-10"
                   >
                     <BookMarked 
                       className={`w-4 h-4 ${res.isSaved ? "fill-amber-500 text-amber-500" : ""}`} 
@@ -311,12 +329,20 @@ export default function ResourcesExplorer({
                   </button>
                 </div>
 
-                <h3 className="font-sans text-sm font-bold text-black dark:text-white mb-2 leading-snug line-clamp-2">
-                  {res.title}
-                </h3>
-                <p className="font-sans text-xs text-zinc-500 dark:text-zinc-400 line-clamp-3 leading-relaxed">
-                  {res.description}
-                </p>
+                {/* Highly structured keyboard trigger button replacing clickable parent background (PR 4.1) */}
+                <button
+                  type="button"
+                  onClick={() => handleOpenReader(res)}
+                  aria-label={`Open reader for ${res.title}`}
+                  className="w-full text-left font-sans block group focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded"
+                >
+                  <h3 className="font-sans text-sm font-bold text-black dark:text-white mb-2 leading-snug line-clamp-2 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                    {res.title}
+                  </h3>
+                  <p className="font-sans text-xs text-zinc-500 dark:text-zinc-400 line-clamp-3 leading-relaxed">
+                    {res.description}
+                  </p>
+                </button>
               </div>
 
               <div className="mt-5 border-t border-[#eceef0] dark:border-zinc-800 pt-3 flex items-center justify-between text-[11px] font-mono text-slate-500 dark:text-zinc-400">
@@ -329,22 +355,27 @@ export default function ResourcesExplorer({
                     <Clock className="w-3 h-3 text-indigo-400" />
                     Level: {res.estimatedTime}
                   </span>
-                  {user?.readingTimes?.[res.id] !== undefined && user.readingTimes[res.id] > 0 && (
+                  {user?.readingTimes && user.readingTimes[res.id] !== undefined && user.readingTimes[res.id]! > 0 && (
                     <span className="text-[9px] font-bold text-emerald-500 flex items-center gap-0.5">
                       ★ {user.readingTimes[res.id]}s studied
                     </span>
                   )}
                 </div>
               </div>
-            </div>
+            </article>
           ))}
         </div>
       )}
 
-      {/* Dynamic Academic split-screen Reader Modal */}
+      {/* Dynamic Academic split-screen Reader Modal with aria tags (PR 4.3) */}
       {selectedPaper && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-end animate-fade-in pointer-events-auto">
-          <div className="w-full max-w-4xl h-full bg-white dark:bg-zinc-900 shadow-xl flex flex-col justify-between border-l border-zinc-200 dark:border-zinc-800 text-left">
+          <div 
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="resource-reader-title"
+            className="w-full max-w-4xl h-full bg-white dark:bg-zinc-900 shadow-xl flex flex-col justify-between border-l border-zinc-200 dark:border-zinc-800 text-left"
+          >
             
             {/* Header bar hosting the StopWatch */}
             <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between bg-zinc-50 dark:bg-zinc-950">
@@ -352,7 +383,7 @@ export default function ResourcesExplorer({
                 <span className="font-mono text-[10px] bg-blue-100 dark:bg-zinc-800 text-blue-700 dark:text-blue-400 px-2.5 py-0.5 rounded font-bold uppercase tracking-wider">
                   {selectedPaper.type}
                 </span>
-                <h3 className="font-sans font-bold text-sm text-black dark:text-white truncate mt-1">
+                <h3 id="resource-reader-title" className="font-sans font-bold text-sm text-black dark:text-white truncate mt-1">
                   {selectedPaper.title}
                 </h3>
               </div>
@@ -365,7 +396,9 @@ export default function ResourcesExplorer({
                 </div>
                 
                 <button
+                  type="button"
                   onClick={handleCloseReader}
+                  aria-label="Save reading time and close resource"
                   className="p-1 px-3 rounded border border-zinc-300 dark:border-zinc-800 text-xs bg-white dark:bg-zinc-800 text-zinc-900 dark:text-[#f8fafc] hover:bg-zinc-100 dark:hover:bg-zinc-700 transition"
                 >
                   Close & Save Time
@@ -421,18 +454,20 @@ export default function ResourcesExplorer({
                 </div>
               </div>
 
-              {/* Right Workspace notepad */}
+              {/* Right Workspace notepad (PR 4.5) */}
               <div className="md:col-span-2 p-6 bg-zinc-50 dark:bg-zinc-950 h-full flex flex-col justify-between">
                 <div className="space-y-4 flex-1 flex flex-col">
-                  <h4 className="font-sans font-bold text-black dark:text-white text-md flex items-center gap-1.5">
-                    <Brain className="w-4.5 h-4.5 text-amber-500 animate-pulse" />
+                  <h4 className="font-sans font-bold text-black dark:text-white text-md flex items-center gap-1.5 animate-pulse">
+                    <Brain className="w-4.5 h-4.5 text-amber-500" />
                     <span>Workspace Notes</span>
                   </h4>
                   <p className="text-[11px] text-zinc-500 font-sans">
                     Notes are stored dynamically contextualized to {selectedPaper.title}.
                   </p>
                   
+                  <label htmlFor="resource-notes-editor" className="sr-only">Lecture notes draftpad</label>
                   <textarea
+                    id="resource-notes-editor"
                     className="w-full flex-1 p-3 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded font-mono text-xs text-black dark:text-[#f8fafc] focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 resize-none"
                     placeholder="Type personal formulas, key points, or checklist drafts here..."
                     value={personalNote}
@@ -442,6 +477,7 @@ export default function ResourcesExplorer({
 
                 <div className="pt-4 border-t border-zinc-200 dark:border-zinc-800 mt-4">
                   <button
+                    type="button"
                     onClick={handleSaveNotes}
                     className="w-full py-2 bg-black dark:bg-zinc-850 hover:bg-zinc-900 dark:hover:bg-zinc-750 text-white dark:text-amber-100 font-mono text-xs font-semibold rounded hover:opacity-90 flex items-center justify-center gap-2 transition"
                   >

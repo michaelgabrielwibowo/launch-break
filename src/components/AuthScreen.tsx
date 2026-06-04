@@ -19,9 +19,10 @@ import {
 
 interface AuthScreenProps {
   onAuthSuccess: () => void;
+  onEnterDemo: () => void;
 }
 
-export default function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
+export default function AuthScreen({ onAuthSuccess, onEnterDemo }: AuthScreenProps) {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
@@ -128,6 +129,16 @@ export default function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
                 <ArrowRight className="w-3.5 h-3.5 text-zinc-400 ml-auto" />
               </>
             )}
+          </button>
+
+          {/* Explore Demo Sandbox Button */}
+          <button
+            type="button"
+            onClick={onEnterDemo}
+            disabled={loading}
+            className="w-full mt-3 bg-zinc-950 hover:bg-zinc-900 text-zinc-300 dark:text-indigo-200 border border-zinc-800 hover:border-indigo-500/45 font-sans text-xs font-semibold py-3 px-4 rounded-xl active:scale-98 transition-all flex items-center justify-center gap-2"
+          >
+            Explore Demo State (No Sign In)
           </button>
 
           {/* Security policy note footer */}

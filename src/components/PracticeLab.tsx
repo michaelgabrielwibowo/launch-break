@@ -110,7 +110,7 @@ console.log("Raw Dot Product Attention (Expon):", attentionRawScore.toFixed(4));
 
   const handleSnippetChange = (snippetId: string) => {
     setSelectedCodeSnippet(snippetId);
-    setCustomCode(codeSnippets[snippetId].code);
+    setCustomCode(codeSnippets[snippetId]?.code || "");
   };
 
   // Run simulated compilation code
@@ -186,7 +186,7 @@ console.log("Raw Dot Product Attention (Expon):", attentionRawScore.toFixed(4));
     if (selectedOptionIndex === null) return;
     setIsAnswerSubmitted(true);
     const activeQuestion = quizQuestions[currentQuestionIndex];
-    if (selectedOptionIndex === activeQuestion.answerIndex) {
+    if (activeQuestion && selectedOptionIndex === activeQuestion.answerIndex) {
       setCorrectAnswersCount(prev => prev + 1);
     }
   };
@@ -335,91 +335,95 @@ console.log("Raw Dot Product Attention (Expon):", attentionRawScore.toFixed(4));
                     </button>
                   </div>
                 </div>
-              ) : (
-                /* Core interactive Questions */
-                <div className="space-y-4 text-left">
-                  <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800 pb-2 mb-4">
-                    <span className="font-mono text-xs text-zinc-500">
-                      Question {currentQuestionIndex + 1} of {quizQuestions.length}
-                    </span>
-                    <span className="font-mono text-xs text-blue-600 dark:text-blue-405 uppercase font-semibold">
-                      Difficulty: {selectedDifficulty}
-                    </span>
-                  </div>
+              ) : (() => {
+                const activeQuestion = quizQuestions[currentQuestionIndex];
+                if (!activeQuestion) return null;
+                return (
+                  /* Core interactive Questions */
+                  <div className="space-y-4 text-left">
+                    <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800 pb-2 mb-4">
+                      <span className="font-mono text-xs text-zinc-500">
+                        Question {currentQuestionIndex + 1} of {quizQuestions.length}
+                      </span>
+                      <span className="font-mono text-xs text-blue-600 dark:text-blue-405 uppercase font-semibold">
+                        Difficulty: {selectedDifficulty}
+                      </span>
+                    </div>
 
-                  <h4 className="font-sans font-bold text-black dark:text-white text-md mb-5 leading-snug">
-                    {quizQuestions[currentQuestionIndex].question}
-                  </h4>
+                    <h4 className="font-sans font-bold text-black dark:text-white text-md mb-5 leading-snug">
+                      {activeQuestion.question}
+                    </h4>
 
-                  {/* MCQ custom buttons */}
-                  <div className="space-y-2.5">
-                    {quizQuestions[currentQuestionIndex].options.map((option, idx) => {
-                      const isSelected = selectedOptionIndex === idx;
-                      const isCorrectAnswer = idx === quizQuestions[currentQuestionIndex].answerIndex;
-                      
-                      let optionStyle = "border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-850 text-black dark:text-zinc-350";
-                      if (isSelected && !isAnswerSubmitted) {
-                        optionStyle = "border-blue-600 bg-blue-50 dark:bg-zinc-800/60 text-blue-700 dark:text-blue-300 font-medium";
-                      } else if (isAnswerSubmitted) {
-                        if (isCorrectAnswer) {
-                          optionStyle = "border-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 font-semibold";
-                        } else if (isSelected) {
-                          optionStyle = "border-red-600 bg-red-50 dark:bg-red-950/40 text-red-800 dark:text-red-300";
+                    {/* MCQ custom buttons */}
+                    <div className="space-y-2.5">
+                      {activeQuestion.options.map((option, idx) => {
+                        const isSelected = selectedOptionIndex === idx;
+                        const isCorrectAnswer = idx === activeQuestion.answerIndex;
+                        
+                        let optionStyle = "border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-850 text-black dark:text-zinc-350";
+                        if (isSelected && !isAnswerSubmitted) {
+                          optionStyle = "border-blue-600 bg-blue-50 dark:bg-zinc-800/60 text-blue-700 dark:text-blue-300 font-medium";
+                        } else if (isAnswerSubmitted) {
+                          if (isCorrectAnswer) {
+                            optionStyle = "border-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 font-semibold";
+                          } else if (isSelected) {
+                            optionStyle = "border-red-600 bg-red-50 dark:bg-red-950/40 text-red-800 dark:text-red-300";
+                          }
                         }
-                      }
 
-                      return (
-                        <button
-                          key={idx}
-                          disabled={isAnswerSubmitted}
-                          onClick={() => setSelectedOptionIndex(idx)}
-                          className={`w-full p-3 border rounded text-left text-xs transition-all relative ${optionStyle}`}
-                        >
-                          <div className="flex items-start gap-3">
-                            <span className="font-mono bg-[#eceef0] dark:bg-zinc-800 px-1.5 py-0.5 rounded font-bold">{String.fromCharCode(65 + idx)}</span>
-                            <span>{option}</span>
+                        return (
+                          <button
+                            key={idx}
+                            disabled={isAnswerSubmitted}
+                            onClick={() => setSelectedOptionIndex(idx)}
+                            className={`w-full p-3 border rounded text-left text-xs transition-all relative ${optionStyle}`}
+                          >
+                            <div className="flex items-start gap-3">
+                              <span className="font-mono bg-[#eceef0] dark:bg-zinc-800 px-1.5 py-0.5 rounded font-bold">{String.fromCharCode(65 + idx)}</span>
+                              <span>{option}</span>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Feedback explanation block */}
+                    {isAnswerSubmitted && (
+                      <div className="mt-4 p-4 rounded bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 animate-fade-in">
+                        <div className="flex items-start gap-2.5 text-xs text-slate-600 dark:text-zinc-400">
+                          <Info className="w-4 h-4 shrink-0 text-blue-500" />
+                          <div>
+                            <p className="font-bold text-black dark:text-white mb-1">Academic Explanation:</p>
+                            <p>{activeQuestion.explanation}</p>
                           </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  {/* Feedback explanation block */}
-                  {isAnswerSubmitted && (
-                    <div className="mt-4 p-4 rounded bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 animate-fade-in">
-                      <div className="flex items-start gap-2.5 text-xs text-slate-600 dark:text-zinc-400">
-                        <Info className="w-4 h-4 shrink-0 text-blue-500" />
-                        <div>
-                          <p className="font-bold text-black dark:text-white mb-1">Academic Explanation:</p>
-                          <p>{quizQuestions[currentQuestionIndex].explanation}</p>
                         </div>
                       </div>
-                    </div>
-                  )}
-
-                  {/* Submission and advancing controls */}
-                  <div className="flex justify-end gap-2.5 pt-4 mt-4 border-t border-zinc-150 dark:border-zinc-800">
-                    {!isAnswerSubmitted ? (
-                      <button
-                        onClick={handleSubmitAnswer}
-                        disabled={selectedOptionIndex === null}
-                        className="px-4 py-2 bg-black dark:bg-white text-white dark:text-black font-sans text-xs font-semibold rounded hover:opacity-90 active:scale-95 disabled:opacity-50 transition-all"
-                      >
-                        Check Answer
-                      </button>
-                    ) : (
-                      <button
-                        onClick={handleNextQuestion}
-                        className="px-4 py-2 bg-black dark:bg-white text-white dark:text-black font-sans text-xs font-semibold rounded hover:opacity-90 active:scale-95 transition-all flex items-center gap-1"
-                      >
-                        <span>{currentQuestionIndex < quizQuestions.length - 1 ? "Next Challenge" : "Log Results"}</span>
-                        <ChevronRight className="w-4 h-4" />
-                      </button>
                     )}
-                  </div>
 
-                </div>
-              )}
+                    {/* Submission and advancing controls */}
+                    <div className="flex justify-end gap-2.5 pt-4 mt-4 border-t border-zinc-150 dark:border-zinc-800">
+                      {!isAnswerSubmitted ? (
+                        <button
+                          onClick={handleSubmitAnswer}
+                          disabled={selectedOptionIndex === null}
+                          className="px-4 py-2 bg-black dark:bg-white text-white dark:text-black font-sans text-xs font-semibold rounded hover:opacity-90 active:scale-95 disabled:opacity-50 transition-all"
+                        >
+                          Check Answer
+                        </button>
+                      ) : (
+                        <button
+                          onClick={handleNextQuestion}
+                          className="px-4 py-2 bg-black dark:bg-white text-white dark:text-black font-sans text-xs font-semibold rounded hover:opacity-90 active:scale-95 transition-all flex items-center gap-1"
+                        >
+                          <span>{currentQuestionIndex < quizQuestions.length - 1 ? "Next Challenge" : "Log Results"}</span>
+                          <ChevronRight className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+
+                  </div>
+                );
+              })()}
 
             </div>
           )}
@@ -466,7 +470,7 @@ console.log("Raw Dot Product Attention (Expon):", attentionRawScore.toFixed(4));
 
             <div className="flex justify-end gap-2.5 pt-3 border-t border-zinc-150 dark:border-zinc-800">
               <button
-                onClick={() => setCustomCode(codeSnippets[selectedCodeSnippet].code)}
+                onClick={() => setCustomCode(codeSnippets[selectedCodeSnippet]?.code || "")}
                 className="px-3.5 py-1.5 border border-zinc-200 dark:border-zinc-800 hover:bg-[#f2f4f6] dark:hover:bg-zinc-800 text-black dark:text-white font-mono text-[11px] rounded transition-colors"
               >
                 Reset Snippet

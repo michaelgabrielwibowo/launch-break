@@ -24,7 +24,7 @@ export default function TopicsTab({
 }: TopicsTabProps) {
   
   // Find currently active topic object
-  const activeTopic = topics.find(t => t.id === selectedTopicId) || topics[0];
+  const activeTopic = topics.find(t => t.id === selectedTopicId) || topics[0]!;
 
   // Recalculate completion percent instantly
   const totalTasks = activeTopic.tasks.length;

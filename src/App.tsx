@@ -3,16 +3,18 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, lazy, Suspense } from "react";
 import SidebarNav from "./components/SidebarNav";
 import TopAppBar from "./components/TopAppBar";
 import HomeFeed from "./components/HomeFeed";
 import TopicsTab from "./components/TopicsTab";
 import ResourcesExplorer from "./components/ResourcesExplorer";
+import GitHubSearchTool from "./components/GitHubSearchTool";
+import AcademicPapersExplorer from "./components/AcademicPapersExplorer";
 import PracticeLab from "./components/PracticeLab";
 import ProgressTrackerHub from "./components/ProgressTrackerHub";
 import SettingsPanel from "./components/SettingsPanel";
-import AIStudyPartnerChat from "./components/AIStudyPartnerChat";
+const AIStudyPartnerChat = lazy(() => import("./components/AIStudyPartnerChat"));
 import AuthScreen from "./components/AuthScreen";
 import LavaLampBackground from "./components/LavaLampBackground";
 
@@ -38,6 +40,7 @@ export default function App() {
   // Auth and sync layers
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [authLoading, setAuthLoading] = useState<boolean>(true);
+  const [demoMode, setDemoMode] = useState<boolean>(false);
 
   // Platform entity storage
   const [user, setUser] = useState<UserProfile>({
@@ -56,7 +59,7 @@ export default function App() {
     setUser((prev) => {
       const next = typeof updater === "function" ? updater(prev) : updater;
       
-      if (auth.currentUser) {
+      if (auth.currentUser && !demoMode) {
         const userRef = doc(db, "users", auth.currentUser.uid);
         setDoc(userRef, {
           name: next.name,
@@ -79,7 +82,7 @@ export default function App() {
   const handleToggleDarkMode = async (mode: boolean) => {
     // Mode is locked to true for exclusive Dark Mode Palette setup
     setIsDarkMode(true);
-    if (auth.currentUser) {
+    if (auth.currentUser && !demoMode) {
       const userRef = doc(db, "users", auth.currentUser.uid);
       setDoc(userRef, { isDarkMode: true }, { merge: true }).catch((err) => {
         console.error("Failed to sync dark mode state to cloud database:", err);
@@ -253,12 +256,29 @@ export default function App() {
     );
   }
 
-  if (!currentUser) {
-    return <AuthScreen onAuthSuccess={() => {}} />;
+  if (!currentUser && !demoMode) {
+    return (
+      <AuthScreen 
+        onAuthSuccess={() => setDemoMode(false)} 
+        onEnterDemo={() => {
+          setDemoMode(true);
+          setUser({
+            name: "Guest Scholar (Demo)",
+            email: "scholar@example.com",
+            avatarUrl: "https://api.dicebear.com/7.x/bottts/svg?seed=demo",
+            isPro: false,
+            readingTimes: {},
+            streakCount: 1,
+            lastActiveDate: new Date().toLocaleDateString("en-CA"),
+            claimedRewardDays: 0
+          });
+        }} 
+      />
+    );
   }
 
   return (
-    <div className="min-h-screen relative bg-slate-50 dark:bg-[#07090e] text-[#191c1e] dark:text-[#f8fafc] flex flex-col font-sans transition-colors duration-300">
+    <div className="min-h-screen relative bg-slate-50 dark:bg-[#07090e] text-[#191c1e] dark:text-[#f8fafc] flex flex-col font-sans transition-colors duration-300 overflow-hidden">
       
       {/* Lava Lamp background and dynamic Glassmorphic Glows */}
       <LavaLampBackground />
@@ -284,7 +304,7 @@ export default function App() {
         />
 
         {/* Main workspace container wrapper */}
-        <div className="flex-1 pl-0 md:pl-[260px] flex flex-col min-h-screen transition-all duration-200">
+        <div className="flex-1 pl-0 md:pl-[260px] flex flex-col min-h-screen transition-all duration-200 relative overflow-hidden">
           
           {/* Universal Top Bar */}
           <TopAppBar 
@@ -295,10 +315,15 @@ export default function App() {
             systemHealth={systemHealth}
             isDarkMode={isDarkMode}
             setIsDarkMode={handleToggleDarkMode}
+            demoMode={demoMode}
+            onExitDemo={() => {
+              setDemoMode(false);
+              setCurrentUser(null);
+            }}
           />
 
         {/* Dynamic page container based on routes */}
-        <main className="flex-1 p-6 md:p-8 max-w-7xl w-full mx-auto pb-24">
+        <main className="flex-1 p-6 md:p-8 max-w-7xl w-full mx-auto pb-24 bg-white/5 dark:bg-[#07090e]/5 backdrop-blur-[2.5px]">
           
           {activeTab === "home" && (
             <HomeFeed
@@ -338,15 +363,7 @@ export default function App() {
           )}
 
           {activeTab === "papers" && (
-            <ResourcesExplorer
-              resources={resources}
-              setResources={setResources}
-              searchString={searchString}
-              onSearchChange={setSearchString}
-              activeSavedOnly={false}
-              user={user}
-              onUpdateUser={handleUpdateUser}
-            />
+            <AcademicPapersExplorer />
           )}
 
           {activeTab === "saved" && (
@@ -383,19 +400,7 @@ export default function App() {
           )}
 
           {activeTab === "github" && (
-            <div className="p-8 text-center bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded max-w-xl mx-auto space-y-4 animate-fade-in text-left">
-              <Github className="w-12 h-12 mx-auto text-zinc-900 dark:text-zinc-100" />
-              <h3 className="font-sans font-bold text-black dark:text-white text-md text-center">
-                GitHub Tools Integration
-              </h3>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed font-sans text-center">
-                Synchronize your academic-math repos, check operational code structures, or parse technical files directly from your workspace directory.
-              </p>
-              <div className="p-4 bg-zinc-50 dark:bg-zinc-950 rounded border border-zinc-200 dark:border-zinc-800 text-xs font-mono">
-                <p className="text-blue-500">{">>> git remote check active"}</p>
-                <p className="text-emerald-500">Syllabus Sync: 100% aligned with cloud repository parameters.</p>
-              </div>
-            </div>
+            <GitHubSearchTool />
           )}
 
           {activeTab === "help" && (
@@ -425,33 +430,36 @@ export default function App() {
         </main>
 
         {/* Footer Component designed precisely matching standard metadata */}
-        <footer className="w-full bg-white dark:bg-zinc-950 border-t border-[#eceef0] dark:border-zinc-800 py-6 px-8 mt-auto flex flex-col md:flex-row items-center justify-between text-zinc-500 dark:text-zinc-400 text-xs transition-colors duration-200">
+        <footer className="w-full bg-white/10 dark:bg-[#07090e]/15 backdrop-blur-sm border-t border-[#eceef0]/30 dark:border-zinc-800/30 py-6 px-8 mt-auto flex flex-col md:flex-row items-center justify-between text-zinc-500 dark:text-zinc-400 text-xs transition-colors duration-200">
           <p className="font-sans font-semibold text-black dark:text-white text-center md:text-left mb-3 md:mb-0">
             © 2026 Learning Launchpad. Structured knowledge for modern minds.
           </p>
-          <div className="flex flex-wrap justify-center gap-6 font-mono text-[11px]">
-            <a href="#" className="hover:text-black dark:hover:text-white transition-colors">Privacy Policy</a>
-            <a href="#" className="hover:text-black dark:hover:text-white transition-colors">Terms of Service</a>
-            <a href="#" className="hover:text-black dark:hover:text-white transition-colors">API Documentation</a>
-            <a href="#" className="hover:text-black dark:hover:text-white transition-colors">Community Discord</a>
+          <div className="flex flex-wrap justify-center gap-6 font-mono text-[10px] text-zinc-400 dark:text-zinc-500">
+            <span>Privacy Policy (coming soon)</span>
+            <span>Terms of Service (coming soon)</span>
+            <span>API Docs (coming soon)</span>
+            <span>Community Discord (coming soon)</span>
           </div>
         </footer>
 
         {/* Floating AI Study partner widget */}
-        <AIStudyPartnerChat 
-          currentTab={activeTab} 
-          systemHealth={systemHealth}
-        />
+        <Suspense fallback={null}>
+          <AIStudyPartnerChat 
+            currentTab={activeTab} 
+            systemHealth={systemHealth}
+          />
+        </Suspense>
 
       </div>
 
       {/* 4. PREMIUM PRO PROMOTION UPGRADE MODAL */}
       {isProModalOpen && (
-        <div className="fixed inset-0 bg-black/65 z-50 flex items-center justify-center p-4 animate-fade-in">
+        <div className="fixed inset-0 bg-black/65 z-50 flex items-center justify-center p-4 animate-fade-in" role="dialog" aria-modal="true" aria-labelledby="pro-modal-title">
           <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg max-w-md w-full p-6 text-left relative shadow-2xl">
             <button
               onClick={() => setIsProModalOpen(false)}
               className="absolute top-4 right-4 p-1 rounded-full text-zinc-500 hover:text-black dark:hover:text-white"
+              aria-label="Close modal"
             >
               <X className="w-5 h-5" />
             </button>
@@ -461,29 +469,25 @@ export default function App() {
                 <Sparkles className="w-8 h-8 animate-pulse" />
               </div>
 
-              <h3 className="font-sans font-bold text-lg text-black dark:text-white">
-                Unlock Learning Launchpad Pro Workspace
+              <h3 id="pro-modal-title" className="font-sans font-bold text-lg text-black dark:text-white">
+                Prototype Feature: Pro Workspace (Unimplemented)
               </h3>
 
               <p className="text-xs text-zinc-500 dark:text-zinc-400 font-sans leading-relaxed">
-                Supercharge your academic modeling environment with unrestricted Gemini integrations. Access advanced math model compilations, instant PDF highlights, deep research paper analysis, and collaborative team tracking options!
+                Supercharge your academic modeling environment with unrestricted Gemini integrations. Access advanced math model compilations, instant PDF highlights, deep research paper analysis, and collaborative team tracking options! Please note that the Pro workspace is not yet implemented in this release.
               </p>
 
-              <div className="space-y-2 border-y border-zinc-150 dark:border-zinc-800 py-3 text-xs text-zinc-700 dark:text-zinc-300">
-                <p className="flex items-center gap-2 font-medium">✨ Unlimited AI Study Tutor Prompts</p>
-                <p className="flex items-center gap-2 font-medium">📊 High Density Interactive Graphs & Progress Logs</p>
-                <p className="flex items-center gap-2 font-medium">💻 Sandboxed Sandbox code processors with extensive runtimes</p>
+              <div className="space-y-2 border-y border-zinc-150 dark:border-zinc-805 py-3 text-xs text-zinc-700 dark:text-zinc-300">
+                <p className="flex items-center gap-2 font-medium">✨ Unlimited AI Study Tutor Prompts (Future Scope)</p>
+                <p className="flex items-center gap-2 font-medium">📊 High Density Interactive Graphs & Progress Logs (Future Scope)</p>
+                <p className="flex items-center gap-2 font-medium">💻 Sandboxed Sandbox code processors with extensive runtimes (Future Scope)</p>
               </div>
 
               <button
-                onClick={() => {
-                  setUser(prev => ({ ...prev, isPro: true }));
-                  setIsProModalOpen(false);
-                  alert("Pro features unlocked! Premium study indicators activated.");
-                }}
-                className="w-full py-2.5 bg-black dark:bg-white text-white dark:text-black font-sans text-xs font-semibold rounded hover:opacity-90 transition-all flex items-center justify-center gap-2"
+                disabled
+                className="w-full py-2.5 bg-zinc-100 dark:bg-zinc-800 text-zinc-450 dark:text-zinc-500 font-sans text-xs font-semibold rounded cursor-not-allowed flex items-center justify-center gap-2"
               >
-                Activate Free Pro Workspace
+                Pro Plan Coming Soon
               </button>
             </div>
           </div>
