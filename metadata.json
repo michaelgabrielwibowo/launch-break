@@ -1,0 +1,6 @@
+{
+  "name": "Learning Launchpad",
+  "description": "An academic-tech workspace for mastering advanced topics, continuing custom learning tracks, and analyzing technical research papers with an integrated AI tutor.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

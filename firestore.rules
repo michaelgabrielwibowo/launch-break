@@ -1,0 +1,63 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // 1. Global Catch-all safety net (Pillar 1)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+    
+    // Primitive global helpers (Pillar 3)
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+    function incoming() {
+      return request.resource.data;
+    }
+    function existing() {
+      return resource.data;
+    }
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+    
+    // Validation Blueprint for dynamic profile mapping (Pillar 2)
+    function isValidUserProfile(data) {
+      return data.keys().hasAll(['name', 'email', 'avatarUrl', 'isPro'])
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 100
+        && data.email is string && data.email.size() > 0 && data.email.size() <= 120
+        && data.avatarUrl is string && data.avatarUrl.size() > 0 && data.avatarUrl.size() <= 300
+        && data.isPro is bool
+        && (!data.keys().hasAny(['isDarkMode']) || data.isDarkMode is bool)
+        && (!data.keys().hasAny(['streakCount']) || data.streakCount is int)
+        && (!data.keys().hasAny(['lastActiveDate']) || data.lastActiveDate is string)
+        && (!data.keys().hasAny(['claimedRewardDays']) || data.claimedRewardDays is int)
+        && (!data.keys().hasAny(['readingTimes']) || data.readingTimes is map)
+        && (!data.keys().hasAny(['isAdmin']) || data.isAdmin == false);
+    }
+
+    // Secure collection matching for the academic portfolio users (Pillar 6)
+    match /users/{userId} {
+      // PII detail protection - only Owner can get private profile parameters
+      allow get: if isOwner(userId);
+      
+      // Strict creation block with full schema verification
+      allow create: if isOwner(userId) 
+        && isValidId(userId)
+        && isValidUserProfile(incoming());
+        
+      // Tiered Action-based updates (Pillar 4 and Pillar 8)
+      allow update: if isOwner(userId)
+        && isValidId(userId)
+        && isValidUserProfile(incoming())
+        && incoming().email == existing().email  // Email is immortal/immutable (Pillar 12)
+        && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'avatarUrl', 'isPro', 'isDarkMode', 'streakCount', 'lastActiveDate', 'claimedRewardDays', 'readingTimes']);
+        
+      // Users cannot delete their profile record directly (retains analytics consistency)
+      allow delete: if false;
+    }
+  }
+}

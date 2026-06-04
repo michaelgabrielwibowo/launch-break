@@ -1,0 +1,50 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile containing educational and interface preferences.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The full name of the user"
+        },
+        "email": {
+          "type": "string",
+          "description": "The contact email address of the user"
+        },
+        "avatarUrl": {
+          "type": "string",
+          "description": "The custom avatar picture URL of the user"
+        },
+        "isPro": {
+          "type": "boolean",
+          "description": "Whether the user has activated Pro workstation"
+        },
+        "isDarkMode": {
+          "type": "boolean",
+          "description": "Whether the user has dark mode enabled"
+        },
+        "streakCount": {
+          "type": "integer",
+          "description": "Duolingo-style study consecutive streak count"
+        },
+        "lastActiveDate": {
+          "type": "string",
+          "description": "The ISO date string of user's last study activity"
+        },
+        "claimedRewardDays": {
+          "type": "integer",
+          "description": "Pro-only premium extensions reward points/days claimed"
+        }
+      },
+      "required": ["name", "email", "avatarUrl", "isPro"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Private profile information for the academic user."
+    }
+  }
+}
